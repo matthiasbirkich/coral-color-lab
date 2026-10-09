@@ -1,0 +1,13 @@
+{
+  "name": "Coral Color Lab – Korallenfarben auswerten",
+  "short_name": "Coral Color Lab",
+  "description": "Lokale Korallenfoto-Auswertung mit CoralWatch-Farbkarte und Ferrara-Referenzmodellen.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#edf6f6",
+  "theme_color": "#073b52",
+  "icons": [
+    {"src":"assets/coral-color-lab-logo.png","sizes":"1254x1254","type":"image/png","purpose":"any maskable"}
+  ]
+}

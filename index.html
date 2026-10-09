@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=yes">
+  <meta name="theme-color" content="#073b52">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Coral Color Lab">
+  <meta name="description" content="Lokale Fotoauswertung von Korallenfarben mit CoralWatch-Kartenvergleich und explorativen Ferrara-Referenzmodellen.">
+  <title>Coral Color Lab</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="assets/coral-color-lab-logo.png" type="image/png">
+  <link rel="apple-touch-icon" href="assets/coral-color-lab-logo.png">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="app-header">
+    <div class="brand">
+      <img src="assets/coral-color-lab-logo.png" alt="Coral Color Lab Logo" width="64" height="64">
+      <div>
+        <h1>Coral Color Lab</h1>
+        <p>Korallenfarben mit dem iPad untersuchen</p>
+      </div>
+    </div>
+    <div class="header-actions">
+      <span id="offlineBadge" class="status-pill">offline-fähig</span>
+      <button class="ghost" id="helpBtn" type="button">Hilfe</button>
+    </div>
+  </header>
+
+  <main>
+    <section class="control-card" aria-labelledby="setupTitle">
+      <div class="section-heading">
+        <div><span class="step">1</span><h2 id="setupTitle">Foto und Referenz</h2></div>
+        <span id="calibrationStatus" class="small-status">Kalibrierdaten werden geladen …</span>
+      </div>
+      <div class="control-grid">
+        <div class="field upload-field">
+          <label for="photoInput">Korallenfoto</label>
+          <div class="button-row">
+            <label class="button primary file-button" for="photoInput">Foto öffnen</label>
+            <input id="photoInput" type="file" accept="image/jpeg,image/png,image/heic,image/heif" hidden>
+            <button id="demoBtn" class="secondary" type="button">Beispielfoto</button>
+          </div>
+          <small id="photoInfo">Noch kein Bild geöffnet.</small>
+        </div>
+
+        <div class="field">
+          <label for="referenceMode">Kartenreferenz</label>
+          <select id="referenceMode">
+            <option value="hex_auto">HEX – Reihe automatisch</option>
+            <option value="hex_manual">HEX – Reihe selbst wählen</option>
+            <option value="photo">Sechs Kartenfelder im Foto</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="referenceGroup">Farbreihe</label>
+          <select id="referenceGroup">
+            <option>B</option><option>C</option><option selected>D</option><option>E</option>
+          </select>
+          <small id="groupHint">Wird bei „automatisch“ nur als Startanzeige verwendet.</small>
+        </div>
+
+        <div class="field">
+          <label for="coralName">Korallenname</label>
+          <input id="coralName" type="text" value="Dipsastraea" placeholder="z. B. Dipsastraea sp.">
+        </div>
+
+        <div class="field ferrara-field">
+          <label for="species">Ferrara-Referenzart</label>
+          <select id="species">
+            <option value="">Kein Ferrara-Modell</option>
+            <option>Acropora muricata</option>
+            <option>Pocillopora verrucosa</option>
+            <option>Stylophora pistillata</option>
+          </select>
+          <small>Nur auswählen, wenn die Art tatsächlich bekannt ist.</small>
+        </div>
+      </div>
+    </section>
+
+    <section class="workspace-card" aria-labelledby="workspaceTitle">
+      <div class="section-heading workspace-heading">
+        <div><span class="step">2</span><h2 id="workspaceTitle">Fläche markieren</h2></div>
+        <div class="mode-switch" role="group" aria-label="Markierungsmodus">
+          <button id="referenceTool" type="button">Kartenfelder 1–6</button>
+          <button id="polygonTool" class="active" type="button">Korallenpolygon</button>
+        </div>
+      </div>
+
+      <div class="canvas-shell" id="canvasShell">
+        <canvas id="photoCanvas" aria-label="Foto zur Auswahl der Korallenfläche"></canvas>
+        <div id="emptyState" class="empty-state">
+          <img src="assets/coral-color-lab-logo.png" alt="" width="92" height="92">
+          <h3>Ein Foto öffnen</h3>
+          <p>Danach die Koralle mit mehreren Punkten umranden.</p>
+        </div>
+      </div>
+
+      <div class="tool-row">
+        <button id="undoBtn" class="ghost" type="button">Letzten Punkt zurück</button>
+        <button id="clearPolygonBtn" class="ghost danger" type="button">Polygon löschen</button>
+        <button id="clearRefsBtn" class="ghost danger" type="button">Kartenpunkte löschen</button>
+        <span id="selectionStatus" class="selection-status">Polygon: 0 Punkte</span>
+      </div>
+    </section>
+
+    <section class="analyse-bar" aria-label="Auswertung starten">
+      <div>
+        <strong>Bereit zur Auswertung?</strong>
+        <span>Mindestens drei Polygonpunkte setzen.</span>
+      </div>
+      <button id="analyseBtn" class="primary large" type="button">Korallenfarbe auswerten</button>
+    </section>
+
+    <section id="resultsSection" class="results-section" hidden aria-labelledby="resultsTitle">
+      <div class="section-heading">
+        <div><span class="step">3</span><h2 id="resultsTitle">Ergebnis</h2></div>
+        <span id="resultTimestamp" class="small-status"></span>
+      </div>
+
+      <div class="summary-grid">
+        <article class="score-card">
+          <span class="eyebrow">CoralWatch-Farbscore</span>
+          <div class="score-line"><strong id="meanScore">–</strong><span>/ 6</span></div>
+          <span id="healthBadge" class="health-badge">–</span>
+          <p>Unterrichtsregel: Score &gt; 3 = gesund nach Farbregel. Keine umfassende biologische Diagnose.</p>
+        </article>
+        <article class="metric-card">
+          <span class="eyebrow">Gewählte Farbreihe</span>
+          <strong id="chosenGroup">–</strong>
+          <p id="groupDetails">–</p>
+        </article>
+        <article class="metric-card">
+          <span class="eyebrow">RGB-Mittelwert</span>
+          <strong id="rgbMean">–</strong>
+          <p id="pixelDetails">–</p>
+        </article>
+        <article class="metric-card">
+          <span class="eyebrow">Mittlerer Farbabstand</span>
+          <strong id="deltaE">–</strong>
+          <p>ΔE76 zur jeweils nächsten Kartenfarbe; große Werte sprechen für eine unsichere Zuordnung.</p>
+        </article>
+      </div>
+
+      <div class="result-grid">
+        <article class="panel">
+          <h3>Flächenanteile der Stufen</h3>
+          <div id="stageBars" class="stage-bars"></div>
+          <div class="light-dark">
+            <span><b id="lightArea">–</b> Stufen 1–3</span>
+            <span><b id="darkArea">–</b> Stufen 4–6</span>
+          </div>
+        </article>
+        <article class="panel map-panel">
+          <div class="panel-title-row">
+            <h3>Pixelkarte</h3>
+            <button id="mapDownloadBtn" class="small-button" type="button">PNG sichern</button>
+          </div>
+          <canvas id="mapCanvas"></canvas>
+          <p>Die Farben zeigen die zugeordnete Stufe, nicht die Originalfarbe.</p>
+        </article>
+      </div>
+
+      <article class="panel" id="ferraraPanel">
+        <div class="panel-title-row">
+          <div>
+            <h3>Ferrara-Referenzmodelle</h3>
+            <p id="ferraraIntro">Keine Referenzart ausgewählt.</p>
+          </div>
+          <button id="speciesHelpBtn" class="small-button" type="button">Was bedeutet das?</button>
+        </div>
+        <div id="ferraraResults" class="model-grid"></div>
+      </article>
+
+      <article class="panel report-panel">
+        <div class="panel-title-row">
+          <h3>Bericht</h3>
+          <button id="copyReportBtn" class="small-button" type="button">Text kopieren</button>
+        </div>
+        <textarea id="reportText" readonly aria-label="Auswertungsbericht"></textarea>
+        <div class="export-row">
+          <button id="txtDownloadBtn" class="secondary" type="button">Bericht TXT</button>
+          <button id="csvDownloadBtn" class="secondary" type="button">Stufen CSV</button>
+          <button id="jsonDownloadBtn" class="secondary" type="button">Messung JSON</button>
+          <button id="ferraraDownloadBtn" class="secondary" type="button">Ferrara CSV</button>
+        </div>
+      </article>
+    </section>
+  </main>
+
+  <dialog id="helpDialog">
+    <form method="dialog" class="dialog-card">
+      <div class="dialog-header"><h2>So funktioniert die Auswertung</h2><button aria-label="Schließen">×</button></div>
+      <ol class="help-steps">
+        <li><b>Foto öffnen.</b> Das Bild bleibt auf diesem Gerät und wird nicht hochgeladen.</li>
+        <li><b>Referenz wählen.</b> HEX automatisch ist am einfachsten. Der Foto-Modus verwendet sechs Punkte auf derselben CoralWatch-Reihe, von 1 bis 6.</li>
+        <li><b>Polygon markieren.</b> Tippen Sie rund um die Koralle. Das Polygon schließt sich automatisch.</li>
+        <li><b>Auswerten.</b> Pixel werden in CIELAB mit den Kartenfarben verglichen.</li>
+        <li><b>Exportieren.</b> Bericht, CSV, JSON und Pixelkarte werden lokal heruntergeladen.</li>
+      </ol>
+      <div class="notice"><b>Offline auf dem iPad:</b> In Safari einmal öffnen, dann Teilen → „Zum Home-Bildschirm“. Nach dem ersten vollständigen Laden arbeitet die App ohne Internet.</div>
+      <h3>Ferrara-Auswertung</h3>
+      <p>Biologische Referenzmodelle gibt es nur für <i>Acropora muricata</i>, <i>Pocillopora verrucosa</i> und <i>Stylophora pistillata</i>. Die Übertragung auf neue Fotos ist explorativ; Kamera, Beleuchtung und Aufnahmebedingungen sind nicht im Vorhersageintervall enthalten.</p>
+      <h3>KI im Original Coral-CRCA</h3>
+      <p>Das Originalprinzip nutzt CoralSCOP/SAM zur Segmentierung und YOLOv11n-OBB zur Kartenerkennung. Diese MINT-App verwendet bewusst ein manuelles Polygon und feste Rechenregeln – keine trainierten KI-Modelle.</p>
+      <h3>Quellen</h3>
+      <p><a href="https://doi.org/10.1002/lom3.70047" target="_blank" rel="noreferrer">Ferrara et al.</a> · <a href="https://github.com/ErikFerrara/Coral_Color_Index" target="_blank" rel="noreferrer">CHROMA-Daten und R-Code</a> · <a href="https://doi.org/10.1016/j.marpolbul.2026.119384" target="_blank" rel="noreferrer">Coral-CRCA</a></p>
+      <button class="primary" value="close">Verstanden</button>
+    </form>
+  </dialog>
+
+  <dialog id="messageDialog">
+    <form method="dialog" class="dialog-card compact">
+      <div class="dialog-header"><h2 id="messageTitle">Hinweis</h2><button aria-label="Schließen">×</button></div>
+      <div id="messageBody"></div>
+      <button class="primary" value="close">Schließen</button>
+    </form>
+  </dialog>
+
+  <footer>
+    <span>Coral Color Lab 1.0 · MINT-Umsetzung</span>
+    <span>lokale Verarbeitung · keine Bildübertragung</span>
+  </footer>
+  <script src="app.js" defer></script>
+</body>
+</html>
